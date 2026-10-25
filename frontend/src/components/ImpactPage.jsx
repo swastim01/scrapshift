@@ -1,0 +1,45 @@
+import { useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AlertCircle, ArrowDownRight, ArrowRight, BookOpen, CheckCircle2, Download, ExternalLink, FileText, Leaf, Recycle, ShieldCheck, Sparkles, Weight, Wallet } from 'lucide-react';
+
+const INR = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+
+export default function ImpactPage({ impact, onNavigate }) {
+  const [showMethod, setShowMethod] = useState(true);
+  if (!impact?.summary) return <div className="page-loading">Loading impact ledger…</div>;
+  const summary = impact.summary;
+  const monthly = impact.monthly || [];
+  const hasEvents = (impact.events || []).length > 0;
+  const demoEvents = (impact.events || []).filter(e => e.is_demo).length;
+  const carbonLabel = summary.known_estimated_co2e_kg > 0 ? `${summary.known_estimated_co2e_kg.toFixed(3)} kg` : 'Not yet available';
+
+  return <div className="page-stack impact-page">
+    <div className="page-intro-row"><div><div className="eyebrow">TRACEABLE ENVIRONMENTAL OUTCOMES</div><h1>Impact, with receipts.</h1><p>No vanity metrics. SCRAPSHIFT counts material only when a completed build is logged, and separates measured quantities from modelled estimates.</p></div><button className="btn btn-forest" onClick={() => onNavigate('planner')}><Sparkles size={16}/> Plan another reuse build</button></div>
+    <div className="impact-principle-banner"><div className="principle-symbol"><ShieldCheck size={22}/></div><div><strong>Outcomes, not intentions.</strong><span>Inventory scans and generated plans are not counted as environmental impact. A reuse event is recorded only after you confirm a physically completed build.</span></div><span className="principle-tag">AUDITABLE BY DESIGN</span></div>
+
+    <div className="impact-top-grid">
+      <article className="impact-primary-card"><div className="impact-primary-heading"><span className="impact-icon-circle"><Weight size={19}/></span><span className="impact-card-label">MATERIAL KEPT IN USE</span></div><strong className="impact-big-value">{summary.reused_mass_kg.toFixed(3)} <small>kg</small></strong><p>Recorded component mass incorporated into completed builds.</p><div className="impact-bottom-line"><span><Recycle size={15}/> {summary.reused_component_count} component units logged</span><span className="impact-card-footnote">{summary.demo_build_count ? 'Includes labelled sample data' : 'Completed builds only'}</span></div></article>
+      <article className="impact-secondary-card"><div className="impact-secondary-icon cost-icon"><Wallet size={19}/></div><span className="impact-card-label">REPLACEMENT-COST PROXY</span><strong>₹{INR.format(summary.avoided_purchase_cost)}</strong><p>Estimated value of new components that reused stock may have replaced. Not audited savings.</p><div className="impact-secondary-foot"><ArrowDownRight size={14}/> Counterfactual estimate</div></article>
+      <article className="impact-secondary-card"><div className="impact-secondary-icon carbon-icon"><Leaf size={19}/></div><span className="impact-card-label">EMISSIONS ESTIMATE</span><strong>{carbonLabel}</strong><p>Only displayed as a complete estimate when the recorded mass has carbon factors.</p><div className="impact-secondary-foot"><AlertCircle size={14}/> {summary.builds_without_full_carbon_factors} build(s) with incomplete factors</div></article>
+    </div>
+
+    <div className="impact-analysis-grid">
+      <section className="panel-card impact-trend-card"><div className="card-heading-row"><div><div className="eyebrow">RECORDED REUSE</div><h3>Material diversion timeline</h3><p>Weight of components recorded in completed builds, by month.</p></div><span className="chart-unit-pill">GRAMS</span></div>
+        {monthly.length ? <div className="impact-bar-chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={monthly} margin={{ top: 14, right: 10, left: -12, bottom: 0 }}><CartesianGrid strokeDasharray="3 5" vertical={false} stroke="#e9eee9"/><XAxis dataKey="month" tickFormatter={v => { const d = new Date(`${v}-02T12:00:00`); return d.toLocaleDateString('en', { month: 'short', year: '2-digit' }); }} tickLine={false} axisLine={false} tick={{ fill: '#839088', fontSize: 11 }}/><YAxis tickLine={false} axisLine={false} tick={{ fill: '#839088', fontSize: 11 }}/><Tooltip formatter={(value) => [`${Number(value).toFixed(1)} g`, 'Material reused']}/><Bar dataKey="mass_g" fill="#2d7b62" radius={[7, 7, 0, 0]} maxBarSize={42}/></BarChart></ResponsiveContainer></div> : <div className="chart-empty"><div className="empty-plan-art"><Leaf size={24}/></div><strong>No completed reuse builds yet.</strong><span>Plans and inventory are not counted as impact until you log a working build.</span><button className="btn btn-outline-forest btn-sm" onClick={() => onNavigate('planner')}>Open build planner</button></div>}
+        <div className="impact-chart-foot"><span><i className="legend-swatch"/> Logged reused mass</span><span>Demo entries are labelled separately in the event ledger.</span></div>
+      </section>
+      <section className="panel-card methodology-card"><div className="card-heading-row"><div><div className="eyebrow">TRANSPARENT BY DEFAULT</div><h3>Impact methodology</h3><p>Each number has an explicit basis and limitation.</p></div><span className="methodology-shield"><ShieldCheck size={18}/></span></div>
+        <div className="methodology-item"><div className="methodology-item-icon"><Weight size={16}/></div><div><strong>Reuse mass</strong><p>{impact.methodology.mass}</p></div></div>
+        <div className="methodology-item"><div className="methodology-item-icon"><Wallet size={16}/></div><div><strong>Replacement-cost proxy</strong><p>{impact.methodology.purchase_cost}</p></div></div>
+        <div className="methodology-item"><div className="methodology-item-icon"><Leaf size={16}/></div><div><strong>Carbon estimate</strong><p>{impact.methodology.carbon}</p></div></div>
+        <button className="methodology-expand" onClick={() => setShowMethod(v => !v)}>{showMethod ? 'Hide factor guidance' : 'Show factor guidance'} <span>{showMethod ? '−' : '+'}</span></button>
+        {showMethod && <div className="factor-guidance"><strong>Before using a carbon number externally</strong><ul><li>Use a published product environmental declaration or peer-reviewed LCA factor where possible.</li><li>Document the source, product boundary, geography, units, and conversion method.</li><li>Do not count a model's guess as a verified emissions saving.</li><li>Report reuse mass and replacement cost separately from avoided CO₂e.</li></ul></div>}
+      </section>
+    </div>
+
+    <section className="panel-card impact-events-card"><div className="card-heading-row"><div><div className="eyebrow">AUDIT TRAIL</div><h3>Reuse events</h3><p>A record of builds that actually consumed verified inventory.</p></div><div className="impact-events-actions"><span className="event-count-pill">{impact.events.length} recent event{impact.events.length === 1 ? '' : 's'}</span><a className="btn btn-outline-forest btn-sm" href="/api/exports/impact.csv" download><Download size={13}/> Export CSV</a></div></div>
+      {!hasEvents ? <div className="empty-table-state"><BookOpen size={25}/><strong>Your ledger is ready.</strong><span>When you finish a prototype, log the reused components from the build planner.</span></div> : <div className="table-responsive"><table className="table impact-events-table align-middle mb-0"><thead><tr><th>Completed project</th><th>Date logged</th><th>Material reused</th><th>Cost proxy</th><th>Estimated CO₂e</th><th>Record type</th></tr></thead><tbody>{impact.events.map(event => <tr key={event.id}><td><div className="event-project-name"><span className="event-project-icon"><Recycle size={15}/></span><div><strong>{event.project_name}</strong><small>{(event.template_id || '').replaceAll('-', ' ')}</small></div></div></td><td>{new Date(event.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td><strong>{(event.mass_g / 1000).toFixed(3)} kg</strong></td><td>{event.avoided_purchase_cost == null ? '—' : `₹${INR.format(event.avoided_purchase_cost)}`}</td><td>{event.estimated_co2e_kg == null ? <span className="not-reported">Factor incomplete</span> : `${event.estimated_co2e_kg.toFixed(3)} kg`}</td><td><span className={`status-pill ${event.is_demo ? 'pill-demo' : 'pill-verified'}`}>{event.is_demo ? 'Sample data' : 'User logged'}</span></td></tr>)}</tbody></table></div>}
+    </section>
+    <div className="impact-research-note"><FileText size={16}/><div><strong>Hackathon-ready impact reporting</strong><span>For a credible final demo, add source citations to any carbon factor you enter and show one physical prototype alongside this ledger. This screen deliberately does not equate e-waste scanned with waste prevented.</span></div><button className="tiny-link" onClick={() => onNavigate('inventory')}>Update factors <ArrowRight size={14}/></button></div>
+  </div>;
+}

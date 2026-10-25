@@ -1,0 +1,19 @@
+services:
+  scrapshift:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: production
+      SCRAPSHIFT_DB_PATH: /app/backend/data/scrapshift.db
+      CORS_ORIGINS: http://localhost:8000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1/chat/completions}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      SCRAPSHIFT_ENABLE_DEMO_RESET: "false"
+    volumes:
+      - scrapshift_data:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  scrapshift_data:

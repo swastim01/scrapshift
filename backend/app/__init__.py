@@ -1,0 +1,1 @@
+"""SCRAPSHIFT application package."""
